@@ -7,7 +7,7 @@ TARGET := $(BUILD_DIR)/mo3
 SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS := $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
-.PHONY: all clean run
+.PHONY: all clean run test
 
 all: $(TARGET)
 
@@ -22,6 +22,10 @@ $(BUILD_DIR):
 
 run: all
 	./$(TARGET)
+
+test: | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -Isrc tests/ProcessTests.cpp src/Process.cpp -o $(BUILD_DIR)/process-tests
+	./$(BUILD_DIR)/process-tests
 
 clean:
 	rm -rf $(BUILD_DIR)

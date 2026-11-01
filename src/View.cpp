@@ -42,6 +42,7 @@ void View::showAsciiArt(const std::string& text) const {
 void View::showHelp() const {
     std::cout <<
         "Commands:\n"
+        "  process-demo             run a visible process instruction demonstration\n"
         "  set_text <text>          save the text to use for the marquee\n"
         "  set_speed <positive_int> save the speed of marquee animation (in ms)\n"
         "  start_marquee            starts the marquee \"animation\"\n"
