@@ -53,7 +53,7 @@ Or with g++ only:
 
 ```bash
 mkdir -p build
-g++ -std=c++17 -Wall -Wextra src/*.cpp -o build/mo3
+g++ -std=c++17 -Wall -Wextra -Isrc src/main.cpp src/model/*.cpp src/view/*.cpp src/controller/*.cpp -o build/mo3
 ./build/mo3
 ```
 
@@ -65,7 +65,7 @@ Install GCC through [MSYS2](https://www.msys2.org/) (or any MinGW-w64 distributi
 pacman -S mingw-w64-ucrt-x86_64-gcc make
 ```
 
-Build and run with make from the project root (in the MSYS2 shell, so `mkdir -p` and `rm -rf` in the Makefile work):
+Build and run with make from the project root (in the MSYS2 shell or with `mingw32-make`):
 
 ```bash
 make
@@ -76,14 +76,14 @@ Or with g++ only, which also works from PowerShell or Command Prompt once GCC is
 
 ```bat
 mkdir build
-g++ -std=c++17 -Wall -Wextra src/*.cpp -o build/mo3.exe
+g++ -std=c++17 -Wall -Wextra -Isrc src/main.cpp src/model/*.cpp src/view/*.cpp src/controller/*.cpp src/controller/commands/*.cpp -o build/mo3.exe
 build\mo3.exe
 ```
 
-If `src/*.cpp` is not expanded by your shell, list the files explicitly:
+If wildcards are not expanded by your shell, list the files explicitly:
 
 ```bat
-g++ -std=c++17 src/main.cpp src/Controller.cpp src/Model.cpp src/View.cpp src/AsciiArt.cpp src/Process.cpp -o build/mo3.exe
+g++ -std=c++17 -Isrc src/main.cpp src/controller/Controller.cpp src/controller/commands/ScreenLsCommand.cpp src/controller/commands/ReportUtilCommand.cpp src/model/Model.cpp src/view/View.cpp src/view/AsciiArt.cpp src/model/Process.cpp -o build/mo3.exe
 ```
 
 ## Process instruction engine
@@ -94,7 +94,7 @@ From PowerShell in the repository root, build and launch the application:
 
 ```powershell
 New-Item -ItemType Directory -Force build | Out-Null
-g++ -std=c++17 -Wall -Wextra -pthread src/main.cpp src/Controller.cpp src/Model.cpp src/View.cpp src/AsciiArt.cpp src/Process.cpp -o build/mo3.exe
+g++ -std=c++17 -Wall -Wextra -pthread -Isrc src/main.cpp src/controller/Controller.cpp src/controller/commands/ScreenLsCommand.cpp src/controller/commands/ReportUtilCommand.cpp src/model/Model.cpp src/view/View.cpp src/view/AsciiArt.cpp src/model/Process.cpp -o build/mo3.exe
 if ($LASTEXITCODE -eq 0) { ./build/mo3.exe }
 ```
 
@@ -110,7 +110,7 @@ You will see DECLARE/ADD produce 15, SUBTRACT clamp to 0, nested loops print
 pauses. This runs the actual instruction engine with a fixed program; the full
 background scheduler and process screens are still pending. Enter `exit` to quit.
 
-`src/Process.hpp` provides predetermined programs with `Instruction::print`,
+`src/model/Process.hpp` provides predetermined programs with `Instruction::print`,
 `declare`, `add`, `subtract`, `sleep`, and `loop`. Arithmetic operands are either
 `std::int64_t` literals or `std::string` variable names. Values are clamped to
 0..65535; missing variables start at zero. PRINT accepts a message and optionally
@@ -144,7 +144,7 @@ engine is tested through a separate executable until scheduler/screens are wired
 
 ```powershell
 New-Item -ItemType Directory -Force build | Out-Null
-g++ -std=c++17 -Wall -Wextra -Isrc tests/ProcessTests.cpp src/Process.cpp -o build/process-tests.exe
+g++ -std=c++17 -Wall -Wextra -Isrc tests/ProcessTests.cpp src/model/Process.cpp -o build/process-tests.exe
 if ($LASTEXITCODE -eq 0) { ./build/process-tests.exe }
 ```
 
@@ -172,10 +172,16 @@ an assertion failure and exits with a nonzero status. Do not compile tests with
 ```
 Makefile
 src/
-  main.cpp        read-eval loop
-  Controller.*    tokenizes and dispatches commands
-  Model.*         holds application state
-  View.*          all console output
-  AsciiArt.*      renders text as figlet-style ASCII art
-  Process.*       process state, instruction execution, randomized programs
+  main.cpp                read-eval loop
+  controller/
+    Controller.*          tokenizes and dispatches commands
+    commands/
+      ScreenLsCommand.*   lists processes and CPU utilization (placeholder)
+      ReportUtilCommand.* generates utilization report (placeholder)
+  model/
+    Model.*               holds application state
+    Process.*             process state, instruction execution, randomized programs
+  view/
+    View.*                all console output
+    AsciiArt.*            renders text as figlet-style ASCII art
 ```

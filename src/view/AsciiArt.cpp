@@ -1,4 +1,4 @@
-#include "AsciiArt.hpp"
+#include "view/AsciiArt.hpp"
 
 #include <algorithm>
 #include <array>

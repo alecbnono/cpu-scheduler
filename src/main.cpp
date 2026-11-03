@@ -1,9 +1,9 @@
 #include <iostream>
 #include <string>
 
-#include "Controller.hpp"
-#include "Model.hpp"
-#include "View.hpp"
+#include "controller/Controller.hpp"
+#include "model/Model.hpp"
+#include "view/View.hpp"
 
 int main() {
     Model model;

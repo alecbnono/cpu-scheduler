@@ -1,11 +1,37 @@
 CXX := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -g
+CXXFLAGS := -std=c++17 -Wall -Wextra -g -Isrc
 SRC_DIR := src
 BUILD_DIR := build
 TARGET := $(BUILD_DIR)/mo3
 
-SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
-OBJECTS := $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
+# Support Windows (cmd.exe) and Unix/MSYS2 shells
+ifeq ($(OS),Windows_NT)
+  ifeq ($(shell where sh 2>nul),)
+    SHELL := cmd.exe
+    MKDIR_BUILD := if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
+    RM_BUILD := if exist $(BUILD_DIR) rmdir /s /q $(BUILD_DIR)
+  else
+    MKDIR_BUILD := mkdir -p $(BUILD_DIR)
+    RM_BUILD := rm -rf $(BUILD_DIR)
+  endif
+  RUN_TARGET := $(TARGET)
+  RUN_TEST := $(BUILD_DIR)/process-tests
+else
+  MKDIR_BUILD := mkdir -p $(BUILD_DIR)
+  RM_BUILD := rm -rf $(BUILD_DIR)
+  RUN_TARGET := ./$(TARGET)
+  RUN_TEST := ./$(BUILD_DIR)/process-tests
+endif
+
+SOURCES := $(wildcard $(SRC_DIR)/*.cpp) \
+           $(wildcard $(SRC_DIR)/model/*.cpp) \
+           $(wildcard $(SRC_DIR)/view/*.cpp) \
+           $(wildcard $(SRC_DIR)/controller/*.cpp) \
+           $(wildcard $(SRC_DIR)/controller/commands/*.cpp)
+
+OBJECTS := $(addprefix $(BUILD_DIR)/, $(notdir $(SOURCES:.cpp=.o)))
+
+vpath %.cpp $(SRC_DIR) $(SRC_DIR)/model $(SRC_DIR)/view $(SRC_DIR)/controller $(SRC_DIR)/controller/commands
 
 .PHONY: all clean run test
 
@@ -14,18 +40,18 @@ all: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) -o $(TARGET)
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+	$(MKDIR_BUILD)
 
 run: all
-	./$(TARGET)
+	$(RUN_TARGET)
 
 test: | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -Isrc tests/ProcessTests.cpp src/Process.cpp -o $(BUILD_DIR)/process-tests
-	./$(BUILD_DIR)/process-tests
+	$(CXX) $(CXXFLAGS) tests/ProcessTests.cpp src/model/Process.cpp -o $(BUILD_DIR)/process-tests
+	$(RUN_TEST)
 
 clean:
-	rm -rf $(BUILD_DIR)
+	$(RM_BUILD)

@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "Model.hpp"
-#include "View.hpp"
+#include "model/Model.hpp"
+#include "view/View.hpp"
 
 // Parses a raw command line, updates the Model, and tells the View what to show.
 class Controller {

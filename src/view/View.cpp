@@ -1,8 +1,8 @@
-#include "View.hpp"
+#include "view/View.hpp"
 
 #include <iostream>
 
-#include "AsciiArt.hpp"
+#include "view/AsciiArt.hpp"
 
 void View::showMessage(const std::string& message) const {
     std::cout << message << "\n";

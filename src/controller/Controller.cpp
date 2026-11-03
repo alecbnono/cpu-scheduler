@@ -1,5 +1,5 @@
-#include "Controller.hpp"
-#include "Process.hpp"
+#include "controller/Controller.hpp"
+#include "model/Process.hpp"
 
 #include <sstream>
 
