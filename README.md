@@ -1,6 +1,6 @@
-# Marquee Console Command Interpreter
+# CPU Scheduler Emulator
 
-A small marquee console command interpreter written in C++17 to practice operating systems concepts (CSOPESY). It reads commands from a prompt, parses them, and responds. The code is split into Model / View / Controller.
+A CPU scheduler emulator with a command-line interface, written in C++17 to practice operating systems concepts (CSOPESY). It reads commands from a prompt, parses them, and responds. The code is split into Model / View / Controller.
 
 ## Group members
 - Nono, Alec Marx  
@@ -10,19 +10,18 @@ A small marquee console command interpreter written in C++17 to practice operati
 
 ## Commands
 
-| Command          | Description                                           |
-| ---------------- | ----------------------------------------------------- |
-| `set_text <text>` | Saves `<text>` for the marquee and confirms it        |
-| `help`           | Lists the available commands                          |
-| `process-demo`   | Shows process instructions executing tick by tick     |
-| `exit`           | Quits the program                                     |
+`initialize`, `screen`, `scheduler-start`, `scheduler-stop`, and `report-util` are placeholders for now.
 
-Example:
-
-```
-> set_text Hello World
-Text saved for marquee: Hello World
-```
+| Command           | Description                                       |
+| ----------------- | ------------------------------------------------- |
+| `initialize`      | Initializes the processor configuration           |
+| `screen`          | Creates, reattaches to, or lists processes        |
+| `scheduler-start` | Starts generating dummy processes                 |
+| `scheduler-stop`  | Stops generating dummy processes                  |
+| `report-util`     | Generates the CPU utilization report              |
+| `process-demo`    | Shows process instructions executing tick by tick |
+| `help`            | Lists the available commands                      |
+| `exit`            | Quits the program                                 |
 
 ## Requirements
 
@@ -175,7 +174,7 @@ Makefile
 src/
   main.cpp        read-eval loop
   Controller.*    tokenizes and dispatches commands
-  Model.*         holds application state (the saved marquee text)
+  Model.*         holds application state
   View.*          all console output
   AsciiArt.*      renders text as figlet-style ASCII art
   Process.*       process state, instruction execution, randomized programs
