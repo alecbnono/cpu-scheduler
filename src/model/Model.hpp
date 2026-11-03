@@ -1,5 +1,8 @@
 #pragma once
 
-// Holds application state. No knowledge of input parsing or output formatting.
-class Model {
+#include "model/SystemSnapshot.hpp"
+
+class Model : public ISnapshotProvider {
+public:
+    SystemSnapshot getSnapshot() const override;
 };
