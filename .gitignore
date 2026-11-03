@@ -1,0 +1,17 @@
+# Build output
+build/
+*.o
+*.obj
+*.exe
+*.out
+
+# Scratch files
+tmp/
+
+# Editor settings
+.vscode/
+
+# Environment files
+.env
+.env.*
+!.env.example
