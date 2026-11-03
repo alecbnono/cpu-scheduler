@@ -1,5 +1,6 @@
 #include "model/Model.hpp"
 #include "model/SystemSnapshot.hpp"
+#include "view/ProcessReportView.hpp"
 
 #include <cassert>
 #include <iostream>
@@ -30,6 +31,13 @@ int main() {
     assert(snapshot.finishedProcesses[0].name == "process01");
     assert(snapshot.finishedProcesses[0].currentInstruction == 5876);
     assert(snapshot.finishedProcesses[0].totalInstructions == 5876);
+
+    // 6. Test Report Output
+    std::string report = ProcessReportView::renderToString(snapshot);
+
+    std::cout << "\n--- Generated Report Preview ---\n";
+    std::cout << report;
+    std::cout << "--------------------------------\n\n";
 
     std::cout << "All snapshot tests passed successfully!\n";
     return 0;
