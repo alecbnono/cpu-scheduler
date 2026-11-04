@@ -9,13 +9,23 @@
 #include <iostream>
 #include <sstream>
 
+// Mock provider for testing edge cases
+class MockCustomProvider : public ISnapshotProvider {
+public:
+    explicit MockCustomProvider(SystemSnapshot snap) : snap_(std::move(snap)) {}
+    SystemSnapshot getSnapshot() const override { return snap_; }
+
+private:
+    SystemSnapshot snap_;
+};
+
 int main() {
     Model model;
 
     // 1. Test Polymorphism: verify Model works through the ISnapshotProvider interface
     const ISnapshotProvider& provider = model;
 
-    // 2. Fetch the snapshot
+    // 2. Fetch the snapshot from Model
     SystemSnapshot snapshot = provider.getSnapshot();
 
     // 3. Test System Metrics
@@ -49,7 +59,7 @@ int main() {
     assert(screenResult == true);
     assert(screenOutput.str() == report);
 
-    // 8. Test ReportUtilCommand
+    // 8. Test ReportUtilCommand file creation & content verification
     std::string testLogPath = "build/test-csopesy-log.txt";
     std::ostringstream feedbackOutput;
     ReportUtilCommand reportCmd(model, testLogPath, "C:/csopesy-log.txt", feedbackOutput);
@@ -65,9 +75,29 @@ int main() {
     logFile.close();
     assert(fileBuffer.str() == report);
 
+    // 9. Edge Case: Empty System (0% CPU, 0 running, 0 finished)
+    SystemSnapshot emptySnap;
+    emptySnap.cpuUtilization = 0;
+    emptySnap.coresUsed = 0;
+    emptySnap.coresAvailable = 4;
+    MockCustomProvider emptyProvider(emptySnap);
+    std::string emptyReport = ProcessReportView::renderToString(emptyProvider.getSnapshot());
+    assert(emptyReport.find("CPU utilization: 0%") != std::string::npos);
+    assert(emptyReport.find("Cores used: 0") != std::string::npos);
+    assert(emptyReport.find("Cores available: 4") != std::string::npos);
+    assert(emptyReport.find("Running processes:\n\n") != std::string::npos);
+    assert(emptyReport.find("Finished processes:\n") != std::string::npos);
+
+    // 10. Edge Case: Invalid file path error handling
+    std::ostringstream errorFeedback;
+    ReportUtilCommand invalidPathCmd(model, "Z:/non_existent_folder/log.txt", "Z:/non_existent_folder/log.txt", errorFeedback);
+    bool invalidResult = invalidPathCmd.execute({});
+    assert(invalidResult == true); // Should handle gracefully without crashing
+    assert(errorFeedback.str().find("Error: Unable to open file for writing") != std::string::npos);
+
     std::cout << "\n--- Generated Report Preview ---\n";
     std::cout << report;
     std::cout << "--------------------------------\n";
-    std::cout << "All snapshot, view, and command unit tests passed successfully!\n";
+    std::cout << "All 10 unit test suites and edge cases passed successfully!\n";
     return 0;
 }
