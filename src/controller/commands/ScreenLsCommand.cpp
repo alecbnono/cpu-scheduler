@@ -1,7 +1,11 @@
 #include "controller/commands/ScreenLsCommand.h"
+#include "view/ProcessReportView.hpp"
 
-#include <iostream>
+ScreenLsCommand::ScreenLsCommand(const ISnapshotProvider& provider, std::ostream& out)
+    : provider_(provider), out_(out) {}
 
-void ScreenLsCommand::execute(const std::vector<std::string>& /*args*/) {
-    std::cout << "screen -ls: not implemented yet.\n";
+bool ScreenLsCommand::execute(const std::vector<std::string>& /*args*/) {
+    SystemSnapshot snapshot = provider_.getSnapshot();
+    ProcessReportView::renderReport(out_, snapshot);
+    return true;
 }

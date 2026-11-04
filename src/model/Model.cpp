@@ -5,7 +5,7 @@ SystemSnapshot Model::getSnapshot() const {
     snap.cpuUtilization = 100;
     snap.coresUsed = 4;
     snap.coresAvailable = 0;
-    snap.runningProcesses = {
+    snap.runningProcesses = { // Sample snapshots, matches placeholder in PDF specs
         ProcessSnapshot("process05", "01/18/2024 05:15:22AM", 0, 1235, 5876),
         ProcessSnapshot("process06", "01/18/2024 05:17:22AM", 1, 3, 5876)
     };
