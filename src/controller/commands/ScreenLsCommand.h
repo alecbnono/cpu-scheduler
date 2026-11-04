@@ -1,17 +1,25 @@
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
 #include "model/Model.hpp"
 #include "view/View.hpp"
 
-// Displays a synchronized snapshot of all processes and core utilization.
+#include "model/SystemSnapshot.hpp"
+
+// Command handler for 'screen -ls' (and 'screen-ls').
+// Fetches a snapshot and writes the formatted report to output stream.
 class ScreenLsCommand {
 public:
-    ScreenLsCommand(Model& model, View& view) : model_(model), view_(view) {}
+    // Accepts snapshot provider and optionally an output stream (defaults to std::cout)
+    explicit ScreenLsCommand(const ISnapshotProvider& provider, std::ostream& out = std::cout);
+    ScreenLsCommand(const ISnapshotProvider& provider, View& view);
 
-    void execute(const std::vector<std::string>& args);
+    // Executes the command: fetches snapshot and renders the report
+    bool execute(const std::vector<std::string>& args);
+
 private:
-    Model& model_;
-    View& view_;
+    const ISnapshotProvider& provider_;
+    std::ostream& out_;
 };

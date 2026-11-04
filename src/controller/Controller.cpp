@@ -5,7 +5,11 @@
 #include "controller/commands/ScreenLsCommand.hpp"
 #include "controller/commands/ReportUtilCommand.hpp"
 
-Controller::Controller(Model& model, View& view) : model_(model), view_(view) {}
+Controller::Controller(Model& model, View& view)
+    : model_(model),
+      view_(view),
+      screenLsCommand_(model_),
+      reportUtilCommand_(model_) {}
 
 std::string Controller::prompt() const {
     return attached_.empty() ? "main> " : attached_ + "> ";
@@ -61,9 +65,13 @@ bool Controller::handleCommand(const std::string& line) {
         return true;
     }
 
+    if (command == "screen-ls") {
+        return screenLsCommand_.execute(tokens);
+    }
+
     if (command == "screen") {
         if (tokens.size() == 2 && tokens[1] == "-ls") {
-            ScreenLsCommand(model_, view_).execute(tokens);
+            return screenLsCommand_.execute(tokens);
         } else if (tokens.size() == 3 && (tokens[1] == "-s" || tokens[1] == "-r")) {
             const auto& name = tokens[2];
             if (tokens[1] == "-s") {
@@ -95,8 +103,7 @@ bool Controller::handleCommand(const std::string& line) {
 
     if (command == "report-util") {
         if (tokens.size() != 1) { view_.showMessage("Usage: report-util"); return true; }
-        ReportUtilCommand(model_, view_).execute(tokens);
-        return true;
+        return reportUtilCommand_.execute(tokens);
     }
 
     if (command == "help") {

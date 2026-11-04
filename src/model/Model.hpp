@@ -1,5 +1,6 @@
 #pragma once
 
+#include "model/SystemSnapshot.hpp"
 #include "model/Process.hpp"
 #include <condition_variable>
 #include <deque>
@@ -15,7 +16,7 @@ struct Configuration {
 };
 
 // Owns processes and the background clock. All access is synchronized.
-class Model {
+class Model : public ISnapshotProvider {
 public:
     ~Model();
     bool initialize(const std::string& path, std::string& message);
@@ -25,6 +26,12 @@ public:
     std::string processInfo(const std::string& name) const;
     std::string utilization() const;
     std::string setGenerating(bool enabled);
+  
+    SystemSnapshot getSnapshot() const override;
+
+
+
+  
 private:
     struct Entry {
         std::unique_ptr<Process> process;
@@ -32,6 +39,7 @@ private:
         int core = -1;
         bool queued = false;
         std::uint64_t delay = 0;
+        std::string timestamp;
     };
     struct Core { Entry* entry = nullptr; std::uint64_t slice = 0; };
     void run();

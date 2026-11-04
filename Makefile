@@ -36,7 +36,7 @@ OBJECTS := $(addprefix $(BUILD_DIR)/, $(notdir $(SOURCES:.cpp=.o)))
 
 vpath %.cpp $(SRC_DIR) $(SRC_DIR)/model $(SRC_DIR)/view $(SRC_DIR)/controller $(SRC_DIR)/controller/commands
 
-.PHONY: all clean run test
+.PHONY: all clean run test test-report
 
 all: $(TARGET)
 
@@ -55,8 +55,12 @@ run: all
 test: | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) tests/ProcessTests.cpp src/model/Process.cpp -o $(BUILD_DIR)/process-tests
 	$(RUN_TEST)
-	$(CXX) $(CXXFLAGS) tests/MenuTests.cpp src/model/Model.cpp src/model/Process.cpp src/view/View.cpp src/view/AsciiArt.cpp src/controller/Controller.cpp src/controller/commands/ScreenLsCommand.cpp src/controller/commands/ReportUtilCommand.cpp -o $(BUILD_DIR)/menu-tests
+	$(CXX) $(CXXFLAGS) tests/MenuTests.cpp src/model/Model.cpp src/model/Process.cpp src/view/View.cpp src/view/AsciiArt.cpp src/view/ProcessReportView.cpp src/controller/Controller.cpp src/controller/commands/ScreenLsCommand.cpp src/controller/commands/ReportUtilCommand.cpp -o $(BUILD_DIR)/menu-tests
 	$(BUILD_DIR)/menu-tests
+
+test-report: | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) tests/SnapshotTests.cpp src/model/Model.cpp src/model/Process.cpp src/view/ProcessReportView.cpp src/controller/commands/ScreenLsCommand.cpp src/controller/commands/ReportUtilCommand.cpp -o $(BUILD_DIR)/snapshot-tests
+	$(BUILD_DIR)/snapshot-tests
 
 clean:
 	$(RM_BUILD)
