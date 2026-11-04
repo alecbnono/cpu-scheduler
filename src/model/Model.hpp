@@ -16,7 +16,7 @@ struct Configuration {
 };
 
 // Owns processes and the background clock. All access is synchronized.
-class Model {
+class Model : public ISnapshotProvider {
 public:
     ~Model();
     bool initialize(const std::string& path, std::string& message);
@@ -27,10 +27,10 @@ public:
     std::string utilization() const;
     std::string setGenerating(bool enabled);
   
-    public ISnapshotProvider {
-      public:
-          SystemSnapshot getSnapshot() const override;
-      };
+    SystemSnapshot getSnapshot() const override;
+
+
+
   
 private:
     struct Entry {
@@ -39,6 +39,7 @@ private:
         int core = -1;
         bool queued = false;
         std::uint64_t delay = 0;
+        std::string timestamp;
     };
     struct Core { Entry* entry = nullptr; std::uint64_t slice = 0; };
     void run();

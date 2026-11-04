@@ -65,13 +65,13 @@ bool Controller::handleCommand(const std::string& line) {
         return true;
     }
 
-    if (command == "screen-ls" || (command == "screen" && tokens.size() > 1 && tokens[1] == "-ls")) {
+    if (command == "screen-ls") {
         return screenLsCommand_.execute(tokens);
     }
 
     if (command == "screen") {
         if (tokens.size() == 2 && tokens[1] == "-ls") {
-            ScreenLsCommand(model_, view_).execute(tokens);
+            return screenLsCommand_.execute(tokens);
         } else if (tokens.size() == 3 && (tokens[1] == "-s" || tokens[1] == "-r")) {
             const auto& name = tokens[2];
             if (tokens[1] == "-s") {

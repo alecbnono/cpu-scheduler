@@ -9,3 +9,6 @@ bool ScreenLsCommand::execute(const std::vector<std::string>& /*args*/) {
     ProcessReportView::renderReport(out_, snapshot);
     return true;
 }
+
+ScreenLsCommand::ScreenLsCommand(const ISnapshotProvider& provider, View& /*view*/)
+    : ScreenLsCommand(provider, std::cout) {}

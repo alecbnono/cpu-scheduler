@@ -17,6 +17,7 @@ public:
                                std::string targetFilePath = "csopesy-log.txt",
                                std::string displayPath = "C:/csopesy-log.txt",
                                std::ostream& feedbackOut = std::cout);
+    ReportUtilCommand(const ISnapshotProvider& provider, View& view);
 
     bool execute(const std::vector<std::string>& args);
 

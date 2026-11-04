@@ -1,3 +1,4 @@
+#include "view/ProcessReportView.hpp"
 #include "model/Model.hpp"
 
 #include <chrono>
@@ -9,22 +10,69 @@
 #include <unordered_map>
 
 SystemSnapshot Model::getSnapshot() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!initialized_ && processes_.empty()) {
+        SystemSnapshot snap;
+        snap.cpuUtilization = 100;
+        snap.coresUsed = 4;
+        snap.coresAvailable = 0;
+        snap.runningProcesses = { // Sample snapshots, matches placeholder in PDF specs
+            ProcessSnapshot("process05", "01/18/2024 05:15:22AM", 0, 1235, 5876),
+            ProcessSnapshot("process06", "01/18/2024 05:17:22AM", 1, 3, 5876)
+        };
+        snap.finishedProcesses = {
+            ProcessSnapshot("process01", "01/18/2024 05:00:21AM", -1, 5876, 5876),
+            ProcessSnapshot("process02", "01/18/2024 05:00:22AM", -1, 5876, 5876)
+        };
+        return snap;
+    }
+
     SystemSnapshot snap;
-    snap.cpuUtilization = 100;
-    snap.coresUsed = 4;
-    snap.coresAvailable = 0;
-    snap.runningProcesses = { // Sample snapshots, matches placeholder in PDF specs
-        ProcessSnapshot("process05", "01/18/2024 05:15:22AM", 0, 1235, 5876),
-        ProcessSnapshot("process06", "01/18/2024 05:17:22AM", 1, 3, 5876)
-    };
-    snap.finishedProcesses = {
-        ProcessSnapshot("process01", "01/18/2024 05:00:21AM", -1, 5876, 5876),
-        ProcessSnapshot("process02", "01/18/2024 05:00:22AM", -1, 5876, 5876)
-    };
+    unsigned used = 0;
+    for (const auto& core : cores_) if (core.entry) ++used;
+    snap.coresUsed = used;
+    snap.coresAvailable = static_cast<uint32_t>(cores_.size() - used);
+    snap.cpuUtilization = cores_.empty() ? 0 : static_cast<uint32_t>((100.0 * used) / cores_.size());
+
+    for (const auto& entry : processes_) {
+        const auto& process = *entry->process;
+        std::string ts = entry->timestamp.empty() ? "01/18/2024 05:00:00AM" : entry->timestamp;
+        if (process.state() == Process::State::Finished) {
+            snap.finishedProcesses.emplace_back(
+                process.name(),
+                ts,
+                -1,
+                process.executedInstructions(),
+                entry->total
+            );
+        } else {
+            snap.runningProcesses.emplace_back(
+                process.name(),
+                ts,
+                entry->core,
+                process.executedInstructions(),
+                entry->total
+            );
+        }
+    }
     return snap;
 }
 
 namespace {
+std::string currentTimestamp() {
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+    std::tm bt{};
+#if defined(_WIN32)
+    localtime_s(&bt, &in_time_t);
+#else
+    localtime_r(&in_time_t, &bt);
+#endif
+    char buf[64];
+    std::strftime(buf, sizeof(buf), "%m/%d/%Y %I:%M:%S%p", &bt);
+    return std::string(buf);
+}
+
 Configuration readConfig(const std::string& path) {
     std::ifstream file(path);
     if (!file) throw std::runtime_error("Cannot open " + path);
@@ -119,6 +167,7 @@ void Model::create(const std::string& name) {
     entry->process = std::make_unique<Process>(nextId_, name, std::move(program));
     entry->total = total;
     entry->delay = config_.delay;
+    entry->timestamp = currentTimestamp();
     processes_.push_back(std::move(entry));
     try { enqueue(processes_.back().get()); }
     catch (...) { processes_.pop_back(); throw; }
@@ -163,31 +212,7 @@ std::string Model::processInfo(const std::string& name) const {
 }
 
 std::string Model::utilization() const {
-    std::lock_guard<std::mutex> lock(mutex_);
-    unsigned used = 0;
-    for (const auto& core : cores_) if (core.entry) ++used;
-    std::ostringstream out;
-    out << "CPU utilization: " << std::fixed << std::setprecision(1)
-        << (cores_.empty() ? 0.0 : 100.0 * used / cores_.size())
-        << "%\nCores used: " << used << "\nCores available: " << cores_.size() - used << '\n';
-    for (bool finished : {false, true}) {
-        out << (finished ? "Finished processes:\n" : "Running processes (including ready/sleeping):\n");
-        bool any = false;
-        for (const auto& entry : processes_) {
-            const auto& process = *entry->process;
-            if ((process.state() == Process::State::Finished) != finished) continue;
-            any = true;
-            out << "  " << process.name() << " | ID " << process.id() << " | "
-                << process.executedInstructions() << '/' << entry->total;
-            if (finished) out << " | Finished";
-            else if (process.state() == Process::State::Sleeping) out << " | Sleeping";
-            else if (entry->core >= 0) out << " | Core " << entry->core;
-            else out << " | Ready";
-            out << '\n';
-        }
-        if (!any) out << "  (none)\n";
-    }
-    return out.str();
+    return ProcessReportView::renderToString(getSnapshot());
 }
 
 std::string Model::setGenerating(bool enabled) {

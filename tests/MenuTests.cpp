@@ -64,8 +64,8 @@ int main() {
             require(command("process-smi").second.find("Finished!") != std::string::npos, "Attached finished details");
             command("exit");
             require(command("screen -r demo").second.find("not found") != std::string::npos, "Finished screen unavailable");
-            require(command("screen -ls").second.find("demo | ID 1") != std::string::npos, "Finished process retained");
-            require(command("report-util").second.find("saved") != std::string::npos, "Report export");
+            require(command("screen -ls").second.find("demo") != std::string::npos, "Finished process retained");
+            require(command("report-util").second.find("csopesy-log.txt") != std::string::npos, "Report export");
             std::ifstream report("csopesy-log.txt");
             std::stringstream contents; contents << report.rdbuf();
             require(contents.str() == model.utilization(), "Report matches listing");

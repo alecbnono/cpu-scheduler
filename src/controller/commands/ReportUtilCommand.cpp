@@ -28,3 +28,6 @@ bool ReportUtilCommand::execute(const std::vector<std::string>& /*args*/) {
     feedbackOut_ << "Report generated at " << displayPath_ << "!\n";
     return true;
 }
+
+ReportUtilCommand::ReportUtilCommand(const ISnapshotProvider& provider, View& /*view*/)
+    : ReportUtilCommand(provider) {}
