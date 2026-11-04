@@ -2,12 +2,16 @@
 
 #include <string>
 #include <vector>
+#include "model/Model.hpp"
+#include "view/View.hpp"
 
-// Placeholder command handler for 'report-util'.
-// Full implementation will be developed in a feature branch.
+// Writes the same utilization snapshot displayed by screen -ls.
 class ReportUtilCommand {
 public:
-    ReportUtilCommand() = default;
+    ReportUtilCommand(Model& model, View& view) : model_(model), view_(view) {}
 
     void execute(const std::vector<std::string>& args);
+private:
+    Model& model_;
+    View& view_;
 };

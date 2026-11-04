@@ -8,5 +8,6 @@ public:
     void showMessage(const std::string& message) const;
     void showAsciiArt(const std::string& text) const;
     void showHelp() const;
-    void showPrompt() const;
+    void showPrompt(const std::string& prompt = "> ") const;
+    void clearScreen() const;
 };
