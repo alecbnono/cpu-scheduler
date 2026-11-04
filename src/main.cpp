@@ -10,8 +10,10 @@ int main() {
     View view;
     Controller controller(model, view);
 
-    view.showMessage("Welcome to CSOPESY!.\n");
-    view.showMessage("Group Developers:");
+    view.showAsciiArt("CSOPESY");
+    view.showMessage("----------------------------------------");
+    view.showMessage("Welcome to CSOPESY Emulator!\n");
+    view.showMessage("Developers:");
     view.showMessage("Nono, Alec Marx");
     view.showMessage("Obregon, Sian Ysabelle");
     view.showMessage("Ponce, Jean Rondel");

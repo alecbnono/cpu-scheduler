@@ -32,6 +32,8 @@ private:
         int core = -1;
         bool queued = false;
         std::uint64_t delay = 0;
+        std::string createdAt;
+        std::vector<std::string> formattedLogs;
     };
     struct Core { Entry* entry = nullptr; std::uint64_t slice = 0; };
     void run();

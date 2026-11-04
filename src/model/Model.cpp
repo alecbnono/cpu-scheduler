@@ -7,8 +7,22 @@
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <ctime>
 
 namespace {
+std::string timestamp() {
+    const auto now = std::time(nullptr);
+    std::tm local{};
+#ifdef _WIN32
+    localtime_s(&local, &now);
+#else
+    localtime_r(&now, &local);
+#endif
+    std::ostringstream out;
+    out << std::put_time(&local, "%m/%d/%Y %I:%M:%S%p");
+    return out.str();
+}
+
 Configuration readConfig(const std::string& path) {
     std::ifstream file(path);
     if (!file) throw std::runtime_error("Cannot open " + path);
@@ -103,6 +117,7 @@ void Model::create(const std::string& name) {
     entry->process = std::make_unique<Process>(nextId_, name, std::move(program));
     entry->total = total;
     entry->delay = config_.delay;
+    entry->createdAt = timestamp();
     processes_.push_back(std::move(entry));
     try { enqueue(processes_.back().get()); }
     catch (...) { processes_.pop_back(); throw; }
@@ -134,13 +149,12 @@ std::string Model::processInfo(const std::string& name) const {
         const auto& process = *entry->process;
         if (process.name() != name) continue;
         std::ostringstream out;
-        out << "Process: " << name << "\nID: " << process.id()
-            << "\nInstructions: " << process.executedInstructions() << '/' << entry->total << '\n';
-        for (const auto& log : process.logs()) out << log << '\n';
+        out << "Process name: " << name << "\nID: " << process.id() << "\nLogs:\n";
+        for (const auto& log : entry->formattedLogs) out << log << '\n';
+        out << '\n';
         if (process.state() == Process::State::Finished) out << "Finished!\n";
-        else if (process.state() == Process::State::Sleeping) out << "Sleeping until tick " << process.wakeTick() << '\n';
-        else if (entry->core >= 0) out << "Running on core " << entry->core << '\n';
-        else out << "Ready\n";
+        else out << "Current instruction line: " << process.executedInstructions()
+                 << "\nLines of code: " << entry->total << '\n';
         return out.str();
     }
     return "Process " + name + " not found.";
@@ -151,26 +165,30 @@ std::string Model::utilization() const {
     unsigned used = 0;
     for (const auto& core : cores_) if (core.entry) ++used;
     std::ostringstream out;
-    out << "CPU utilization: " << std::fixed << std::setprecision(1)
+    out << "CPU utilization: " << std::fixed << std::setprecision(0)
         << (cores_.empty() ? 0.0 : 100.0 * used / cores_.size())
         << "%\nCores used: " << used << "\nCores available: " << cores_.size() - used << '\n';
     for (bool finished : {false, true}) {
-        out << (finished ? "Finished processes:\n" : "Running processes (including ready/sleeping):\n");
+        if (!finished) out << '\n' << std::string(80, '-') << '\n';
+        out << (finished ? "\nFinished processes:\n" : "Running processes:\n");
         bool any = false;
         for (const auto& entry : processes_) {
             const auto& process = *entry->process;
             if ((process.state() == Process::State::Finished) != finished) continue;
             any = true;
-            out << "  " << process.name() << " | ID " << process.id() << " | "
-                << process.executedInstructions() << '/' << entry->total;
-            if (finished) out << " | Finished";
-            else if (process.state() == Process::State::Sleeping) out << " | Sleeping";
-            else if (entry->core >= 0) out << " | Core " << entry->core;
-            else out << " | Ready";
-            out << '\n';
+            out << std::left << std::setw(16) << process.name()
+                << '(' << entry->createdAt << ")  ";
+            std::string status;
+            if (finished) status = "Finished";
+            else if (process.state() == Process::State::Sleeping) status = "Sleeping";
+            else if (entry->core >= 0) status = "Core: " + std::to_string(entry->core);
+            else status = "Ready";
+            out << std::setw(12) << status << std::right
+                << std::setw(8) << process.executedInstructions() << " / " << entry->total << '\n';
         }
         if (!any) out << "  (none)\n";
     }
+    out << std::string(80, '-') << '\n';
     return out.str();
 }
 
@@ -226,7 +244,12 @@ void Model::advance() {
         bool executed = false;
         if (core.entry->delay) --core.entry->delay;
         else {
+            const auto previousLogs = core.entry->process->logs().size();
             core.entry->process->step(tick_);
+            const auto& logs = core.entry->process->logs();
+            for (auto i = previousLogs; i < logs.size(); ++i)
+                core.entry->formattedLogs.push_back("(" + timestamp() + ") Core:" +
+                    std::to_string(core.entry->core) + " \"" + logs[i] + "\"");
             core.entry->delay = config_.delay;
             executed = true;
         }

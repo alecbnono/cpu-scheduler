@@ -54,7 +54,10 @@ int main() {
             require(command("screen -r absent").second.find("not found") != std::string::npos, "Missing process");
             command("screen -s demo");
             require(controller.prompt() == "demo> ", "Attach on creation");
-            require(command("process-smi").second.find("ID: 1") != std::string::npos, "Process details");
+            const auto details = command("process-smi").second;
+            require(details.find("Process name: demo\nID: 1\nLogs:\n") != std::string::npos &&
+                    details.find("Current instruction line: ") != std::string::npos &&
+                    details.find("Lines of code: ") != std::string::npos, "PDF process details format");
             require(command("scheduler-start").second.find("Process screen commands") != std::string::npos, "Screen command isolation");
             require(command("exit").first && controller.prompt() == "main> ", "Detach does not terminate");
             require(command("screen -s demo").second.find("already exists") != std::string::npos, "Duplicate names");
@@ -64,8 +67,10 @@ int main() {
             require(command("process-smi").second.find("Finished!") != std::string::npos, "Attached finished details");
             command("exit");
             require(command("screen -r demo").second.find("not found") != std::string::npos, "Finished screen unavailable");
-            require(command("screen -ls").second.find("demo | ID 1") != std::string::npos, "Finished process retained");
-            require(command("report-util").second.find("saved") != std::string::npos, "Report export");
+            const auto listing = command("screen -ls").second;
+            require(listing.find("Finished processes:\n") != std::string::npos &&
+                    listing.find("demo") != std::string::npos, "Finished process retained");
+            require(command("report-util").second.find("Report generated at ") != std::string::npos, "Report export");
             std::ifstream report("csopesy-log.txt");
             std::stringstream contents; contents << report.rdbuf();
             require(contents.str() == model.utilization(), "Report matches listing");

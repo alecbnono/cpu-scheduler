@@ -33,6 +33,26 @@ and PRINT logs. `exit` returns to the main menu while execution continues.
 Finished processes remain listed, but cannot be reattached after leaving their
 screen. Process names must be unique, including names of finished processes.
 
+Process output follows the PDF labels: `Process name:`, `ID:`, `Logs:`,
+`Current instruction line:`, and `Lines of code:`. Each PRINT log records its
+actual execution timestamp and CPU core, for example:
+
+```text
+Process name: screen_01
+ID: 1
+Logs:
+(11/04/2026 09:15:22AM) Core:0 "Hello world from screen_01!"
+
+Current instruction line: 153
+Lines of code: 1651
+```
+
+On completion, `Finished!` replaces the progress lines. `screen -ls` and the
+exported report use aligned name, creation timestamp, core/status, and progress
+columns under `Running processes:` and `Finished processes:`. Ready/sleeping
+processes show their status instead of an assigned core. Times use the machine's
+local timezone. Actual timestamps, progress, and utilization vary during execution.
+
 ### Try the main menu and process screens
 
 Build and run from the repository root using `make run` (or the PowerShell build

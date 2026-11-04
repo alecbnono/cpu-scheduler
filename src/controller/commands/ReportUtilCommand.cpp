@@ -2,10 +2,12 @@
 
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 
 void ReportUtilCommand::execute(const std::vector<std::string>& /*args*/) {
     std::ofstream file("csopesy-log.txt");
     file << model_.utilization();
     file.close();
-    view_.showMessage(file ? "Report saved to csopesy-log.txt." : "Failed to write csopesy-log.txt.");
+    view_.showMessage(file ? "Report generated at " + std::filesystem::absolute("csopesy-log.txt").string()
+                          : "Failed to write csopesy-log.txt.");
 }
