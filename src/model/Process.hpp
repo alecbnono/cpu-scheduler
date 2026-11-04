@@ -31,7 +31,8 @@ struct Instruction {
     static Instruction loop(std::vector<Instruction> body, std::uint32_t repeats);
 };
 
-// Seeded generation makes workloads reproducible. Count is top-level instructions.
+// Seeded generation makes workloads reproducible. Count is executed leaf instructions,
+// including loop iterations; loop-control nodes do not consume execution ticks.
 std::vector<Instruction> generateProgram(const std::string& processName,
                                          std::size_t count, std::uint32_t seed);
 

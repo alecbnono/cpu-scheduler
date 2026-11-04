@@ -73,8 +73,10 @@ The background runtime advances one simulated CPU tick every 10 ms. Each core
 executes at most one leaf instruction per tick, with configured delays retaining
 the core. Sleeping processes release their core. Round robin preempts after the
 configured quantum; FCFS retains a core until the process sleeps or finishes.
-Instruction bounds count generated top-level instructions; loop bodies add
-executed instructions. Workloads are seeded by process ID for reproducibility.
+Instruction bounds count executed leaf instructions, including all loop
+iterations. FOR control itself does not consume an execution tick. Each generated
+process's reported total stays within min-ins..max-ins, and completion reaches
+that total exactly. Workloads are seeded by process ID for reproducibility.
 
 ## Requirements
 
@@ -136,7 +138,7 @@ build\mo3.exe
 If wildcards are not expanded by your shell, list the files explicitly:
 
 ```bat
-g++ -std=c++17 -Isrc src/main.cpp src/controller/Controller.cpp src/controller/commands/ScreenLsCommand.cpp src/controller/commands/ReportUtilCommand.cpp src/model/Model.cpp src/view/View.cpp src/view/AsciiArt.cpp src/model/Process.cpp -o build/mo3.exe
+g++ -std=c++17 -Isrc src/main.cpp src/controller/Controller.cpp src/controller/commands/ScreenLsCommand.cpp src/controller/commands/ReportUtilCommand.cpp src/model/Model.cpp src/view/View.cpp src/view/AsciiArt.cpp src/view/ProcessReportView.cpp src/model/Process.cpp -o build/mo3.exe
 ```
 
 ## Process instruction engine
@@ -147,7 +149,7 @@ From PowerShell in the repository root, build and launch the application:
 
 ```powershell
 New-Item -ItemType Directory -Force build | Out-Null
-g++ -std=c++17 -Wall -Wextra -pthread -Isrc src/main.cpp src/controller/Controller.cpp src/controller/commands/ScreenLsCommand.cpp src/controller/commands/ReportUtilCommand.cpp src/model/Model.cpp src/view/View.cpp src/view/AsciiArt.cpp src/model/Process.cpp -o build/mo3.exe
+g++ -std=c++17 -Wall -Wextra -pthread -Isrc src/main.cpp src/controller/Controller.cpp src/controller/commands/ScreenLsCommand.cpp src/controller/commands/ReportUtilCommand.cpp src/model/Model.cpp src/view/View.cpp src/view/AsciiArt.cpp src/view/ProcessReportView.cpp src/model/Process.cpp -o build/mo3.exe
 if ($LASTEXITCODE -eq 0) { ./build/mo3.exe }
 ```
 
@@ -183,8 +185,8 @@ logs remain available for finished-process reports.
 
 `generateProgram(name, count, seed)` creates reproducible randomized workloads
 covering all six instruction types, with the default PRINT message
-`Hello world from <process_name>!`. Count measures top-level instructions; loop
-bodies add executed instructions. Programs can also be constructed explicitly
+`Hello world from <process_name>!`. Count is the exact number of executed leaf
+instructions, including loop repetitions. Programs can also be constructed explicitly
 for quiz scenarios. The background runtime uses this engine for screen-created
 and scheduler-generated processes.
 
@@ -219,6 +221,23 @@ All process instruction tests passed.
 screen navigation, duplicate and missing names, background execution under FCFS
 and round robin, finished-process access, workload generation, and report export.
 Test fixtures are stored under the ignored `build/` directory.
+
+`make test` also runs snapshot/report and deterministic scheduler tests. The
+scheduler checks exact FCFS order, RR quantum turns and fairness, distinct core
+assignment, at most one execution per process per tick, sleep/wake timing,
+execution delays (including delays longer than a quantum), generation intervals,
+and instruction bounds across different random seeds. These tests advance the
+real scheduler manually rather than relying on wall-clock timing.
+
+Report fixtures live only in tests. The real model returns an empty snapshot
+before initialization. Listings show `Ready` or `Sleeping` for unassigned
+processes, and `Core: N` only for assigned processes. Report success messages
+show the actual absolute destination and are printed only after successful close.
+
+`process-smi` follows the PDF's `Process name:`, `ID:`, `Logs:`,
+`Current instruction line:`, and `Lines of code:` labels. Each PRINT log includes
+its execution timestamp in local time and its actual core number. Completed
+processes show `Finished!` instead of the instruction progress lines.
 
 The tests check PRINT output and variable interpolation, DECLARE, ADD/SUBTRACT
 clamping and implicit variables, sleep/wake timing (including 0 and 255 ticks),

@@ -11,21 +11,6 @@
 
 SystemSnapshot Model::getSnapshot() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!initialized_ && processes_.empty()) {
-        SystemSnapshot snap;
-        snap.cpuUtilization = 100;
-        snap.coresUsed = 4;
-        snap.coresAvailable = 0;
-        snap.runningProcesses = { // Sample snapshots, matches placeholder in PDF specs
-            ProcessSnapshot("process05", "01/18/2024 05:15:22AM", 0, 1235, 5876),
-            ProcessSnapshot("process06", "01/18/2024 05:17:22AM", 1, 3, 5876)
-        };
-        snap.finishedProcesses = {
-            ProcessSnapshot("process01", "01/18/2024 05:00:21AM", -1, 5876, 5876),
-            ProcessSnapshot("process02", "01/18/2024 05:00:22AM", -1, 5876, 5876)
-        };
-        return snap;
-    }
 
     SystemSnapshot snap;
     unsigned used = 0;
@@ -36,7 +21,7 @@ SystemSnapshot Model::getSnapshot() const {
 
     for (const auto& entry : processes_) {
         const auto& process = *entry->process;
-        std::string ts = entry->timestamp.empty() ? "01/18/2024 05:00:00AM" : entry->timestamp;
+        const auto& ts = entry->timestamp;
         if (process.state() == Process::State::Finished) {
             snap.finishedProcesses.emplace_back(
                 process.name(),
@@ -53,6 +38,10 @@ SystemSnapshot Model::getSnapshot() const {
                 process.executedInstructions(),
                 entry->total
             );
+        }
+        if (process.state() != Process::State::Finished) {
+            snap.runningProcesses.back().status = entry->core >= 0 ? "Running" :
+                process.state() == Process::State::Sleeping && process.wakeTick() > tick_ ? "Sleeping" : "Ready";
         }
     }
     return snap;
@@ -199,13 +188,12 @@ std::string Model::processInfo(const std::string& name) const {
         const auto& process = *entry->process;
         if (process.name() != name) continue;
         std::ostringstream out;
-        out << "Process: " << name << "\nID: " << process.id()
-            << "\nInstructions: " << process.executedInstructions() << '/' << entry->total << '\n';
-        for (const auto& log : process.logs()) out << log << '\n';
+        out << "Process name: " << name << "\nID: " << process.id() << "\nLogs:\n";
+        for (const auto& log : entry->formattedLogs) out << log << '\n';
+        out << '\n';
         if (process.state() == Process::State::Finished) out << "Finished!\n";
-        else if (process.state() == Process::State::Sleeping) out << "Sleeping until tick " << process.wakeTick() << '\n';
-        else if (entry->core >= 0) out << "Running on core " << entry->core << '\n';
-        else out << "Ready\n";
+        else out << "Current instruction line: " << process.executedInstructions()
+                 << "\nLines of code: " << entry->total << '\n';
         return out.str();
     }
     return "Process " + name + " not found.";
@@ -267,7 +255,12 @@ void Model::advance() {
         bool executed = false;
         if (core.entry->delay) --core.entry->delay;
         else {
+            const auto oldLogCount = core.entry->process->logs().size();
             core.entry->process->step(tick_);
+            const auto& logs = core.entry->process->logs();
+            for (auto i = oldLogCount; i < logs.size(); ++i)
+                core.entry->formattedLogs.push_back("(" + currentTimestamp() + ") Core:" +
+                    std::to_string(core.entry->core) + " \"" + logs[i] + "\"");
             core.entry->delay = config_.delay;
             executed = true;
         }

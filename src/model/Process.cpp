@@ -25,8 +25,14 @@ std::vector<Instruction> generateProgram(const std::string& processName,
         case 2: program.push_back(Instruction::add("x", std::string("x"), value)); break;
         case 3: program.push_back(Instruction::subtract("x", std::string("x"), value)); break;
         case 4: program.push_back(Instruction::sleep(random() % 256)); break;
-        case 5: program.push_back(Instruction::loop({Instruction::print(
-            "Hello world from " + processName + "!")}, 1 + random() % 3)); break;
+        case 5: {
+            const auto repeats = static_cast<std::uint32_t>(
+                std::min<std::size_t>(count - i, 1 + random() % 3));
+            program.push_back(Instruction::loop({Instruction::print(
+                "Hello world from " + processName + "!")}, repeats));
+            i += repeats - 1;
+            break;
+        }
         }
     }
     return program;

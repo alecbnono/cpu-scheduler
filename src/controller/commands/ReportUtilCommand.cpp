@@ -2,6 +2,7 @@
 #include "view/ProcessReportView.hpp"
 
 #include <fstream>
+#include <filesystem>
 
 ReportUtilCommand::ReportUtilCommand(const ISnapshotProvider& provider,
                                      std::string targetFilePath,
@@ -25,7 +26,13 @@ bool ReportUtilCommand::execute(const std::vector<std::string>& /*args*/) {
     ProcessReportView::renderReport(outFile, snapshot);
     outFile.close();
 
-    feedbackOut_ << "Report generated at " << displayPath_ << "!\n";
+    if (!outFile) {
+        feedbackOut_ << "Error: Unable to finish writing file at " << targetFilePath_ << "\n";
+        return true;
+    }
+
+    feedbackOut_ << "Report generated at "
+                 << std::filesystem::absolute(targetFilePath_).lexically_normal().string() << "!\n";
     return true;
 }
 
