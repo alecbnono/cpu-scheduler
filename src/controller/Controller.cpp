@@ -3,7 +3,11 @@
 
 #include <sstream>
 
-Controller::Controller(Model& model, View& view) : model_(model), view_(view) {}
+Controller::Controller(Model& model, View& view)
+    : model_(model),
+      view_(view),
+      screenLsCommand_(model_),
+      reportUtilCommand_(model_) {}
 
 std::vector<std::string> Controller::tokenize(const std::string& line) {
     std::vector<std::string> tokens;
@@ -33,6 +37,10 @@ bool Controller::handleCommand(const std::string& line) {
         return true;
     }
 
+    if (command == "screen-ls" || (command == "screen" && tokens.size() > 1 && tokens[1] == "-ls")) {
+        return screenLsCommand_.execute(tokens);
+    }
+
     if (command == "screen") {
         view_.showMessage("screen: not implemented yet.");
         return true;
@@ -49,8 +57,7 @@ bool Controller::handleCommand(const std::string& line) {
     }
 
     if (command == "report-util") {
-        view_.showMessage("report-util: not implemented yet.");
-        return true;
+        return reportUtilCommand_.execute(tokens);
     }
 
     if (command == "help") {

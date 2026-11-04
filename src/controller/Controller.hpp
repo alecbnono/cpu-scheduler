@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "controller/commands/ReportUtilCommand.h"
+#include "controller/commands/ScreenLsCommand.h"
 #include "model/Model.hpp"
 #include "view/View.hpp"
 
@@ -17,6 +19,8 @@ public:
 private:
     Model& model_;
     View& view_;
+    ScreenLsCommand screenLsCommand_;
+    ReportUtilCommand reportUtilCommand_;
 
     // Splits a line into whitespace-separated tokens.
     static std::vector<std::string> tokenize(const std::string& line);
