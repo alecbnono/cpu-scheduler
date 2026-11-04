@@ -16,12 +16,12 @@ int main() {
     view.showMessage("Obregon, Sian Ysabelle");
     view.showMessage("Ponce, Jean Rondel");
     view.showMessage("Sy, Prince Matthew\n");
-    view.showMessage("Type 'help' for a list of commands.");
+    view.showMessage("Type 'initialize' to load config.txt, or 'exit' to quit.");
 
     std::string line;
     bool running = true;
     while (running) {
-        view.showPrompt();
+        view.showPrompt(controller.prompt());
         if (!std::getline(std::cin, line)) {
             break;
         }

@@ -10,18 +10,71 @@ A CPU scheduler emulator with a command-line interface, written in C++17 to prac
 
 ## Commands
 
-`initialize`, `screen`, `scheduler-start`, `scheduler-stop`, and `report-util` are placeholders for now.
+Start with `initialize` to load `config.txt`. Before initialization, only
+`initialize` and `exit` are accepted. Configuration errors leave the application
+uninitialized so you can fix the file and retry. Repeated initialization does not
+reset existing processes.
 
 | Command           | Description                                       |
 | ----------------- | ------------------------------------------------- |
 | `initialize`      | Initializes the processor configuration           |
-| `screen`          | Creates, reattaches to, or lists processes        |
+| `screen -s <name>` | Creates a process and opens its screen            |
+| `screen -r <name>` | Reattaches to an unfinished process               |
+| `screen -ls`      | Lists CPU usage and running/finished processes     |
 | `scheduler-start` | Starts generating dummy processes                 |
 | `scheduler-stop`  | Stops generating dummy processes                  |
 | `report-util`     | Generates the CPU utilization report              |
 | `process-demo`    | Shows process instructions executing tick by tick |
 | `help`            | Lists the available commands                      |
 | `exit`            | Quits the program                                 |
+
+Inside a process screen, `process-smi` shows its ID, instruction progress, status,
+and PRINT logs. `exit` returns to the main menu while execution continues.
+Finished processes remain listed, but cannot be reattached after leaving their
+screen. Process names must be unique, including names of finished processes.
+
+### Try the main menu and process screens
+
+Build and run from the repository root using `make run` (or the PowerShell build
+command below), then enter these commands one at a time:
+
+```text
+initialize
+screen -s demo
+process-smi
+exit
+screen -ls
+screen -r demo
+process-smi
+exit
+report-util
+exit
+```
+
+The prompt changes from `main>` to `demo>` when attached. Use `process-smi`
+again after a few seconds to see updated progress. `screen -r demo` reports
+not found if the process has already finished. `report-util` writes the same
+summary as `screen -ls` to `csopesy-log.txt` in the working directory.
+
+For generated workloads, enter `scheduler-start` in the main menu, wait a few
+seconds, then enter `scheduler-stop` and `screen -ls`. Existing processes keep
+executing after generation stops. PRINT logs appear only inside their process
+screens; they do not interrupt the main menu.
+
+### Configuration
+
+The included `config.txt` uses the PDF sample values. Edit it before launching
+and initializing. Supported schedulers are `"fcfs"` and `"rr"`; CPU count is
+1..128. Quantum, generation frequency, and instruction bounds accept 1..2^32;
+execution delay accepts 0..2^32. The minimum instruction bound must not exceed
+the maximum. Large instruction bounds allocate correspondingly large programs.
+
+The background runtime advances one simulated CPU tick every 10 ms. Each core
+executes at most one leaf instruction per tick, with configured delays retaining
+the core. Sleeping processes release their core. Round robin preempts after the
+configured quantum; FCFS retains a core until the process sleeps or finishes.
+Instruction bounds count generated top-level instructions; loop bodies add
+executed instructions. Workloads are seeded by process ID for reproducibility.
 
 ## Requirements
 
@@ -53,7 +106,7 @@ Or with g++ only:
 
 ```bash
 mkdir -p build
-g++ -std=c++17 -Wall -Wextra -Isrc src/main.cpp src/model/*.cpp src/view/*.cpp src/controller/*.cpp -o build/mo3
+g++ -std=c++17 -Wall -Wextra -pthread -Isrc src/main.cpp src/model/*.cpp src/view/*.cpp src/controller/*.cpp src/controller/commands/*.cpp -o build/mo3
 ./build/mo3
 ```
 
@@ -98,17 +151,18 @@ g++ -std=c++17 -Wall -Wextra -pthread -Isrc src/main.cpp src/controller/Controll
 if ($LASTEXITCODE -eq 0) { ./build/mo3.exe }
 ```
 
-At the application's `>` prompt, enter:
+At the application's prompt, enter:
 
 ```text
+initialize
 process-demo
 ```
 
 You will see DECLARE/ADD produce 15, SUBTRACT clamp to 0, nested loops print
 1 through 4, and SLEEP yield at tick 13 until tick 16. The demo then prints
 `Hello world from demo!` and `Finished!`. It uses simulated ticks without real-time
-pauses. This runs the actual instruction engine with a fixed program; the full
-background scheduler and process screens are still pending. Enter `exit` to quit.
+pauses. This runs the actual instruction engine with a fixed program. Use the
+screen commands above for background execution. Enter `exit` to quit.
 
 `src/model/Process.hpp` provides predetermined programs with `Instruction::print`,
 `declare`, `add`, `subtract`, `sleep`, and `loop`. Arithmetic operands are either
@@ -131,14 +185,14 @@ logs remain available for finished-process reports.
 covering all six instruction types, with the default PRINT message
 `Hello world from <process_name>!`. Count measures top-level instructions; loop
 bodies add executed instructions. Programs can also be constructed explicitly
-for quiz scenarios. Configuration loading, scheduling and screen commands are
-separate work and are not connected to this engine yet.
+for quiz scenarios. The background runtime uses this engine for screen-created
+and scheduler-generated processes.
 
 ### Testing the process instructions
 
 Run these commands in a terminal from the repository root. These are shell
 commands, not commands entered at the application's `>` prompt. The instruction
-engine is tested through a separate executable until scheduler/screens are wired up.
+engine is also tested through a separate executable.
 
 **Windows PowerShell** (requires `g++` on your PATH):
 
@@ -160,6 +214,12 @@ Expected output:
 All process instruction tests passed.
 ```
 
+`make test` additionally runs menu/screen integration tests and prints
+`All menu and screen tests passed.` These check initialization errors and gating,
+screen navigation, duplicate and missing names, background execution under FCFS
+and round robin, finished-process access, workload generation, and report export.
+Test fixtures are stored under the ignored `build/` directory.
+
 The tests check PRINT output and variable interpolation, DECLARE, ADD/SUBTRACT
 clamping and implicit variables, sleep/wake timing (including 0 and 255 ticks),
 three nested FOR levels, zero-repeat loops, invalid sleep/nesting rejection,
@@ -176,10 +236,10 @@ src/
   controller/
     Controller.*          tokenizes and dispatches commands
     commands/
-      ScreenLsCommand.*   lists processes and CPU utilization (placeholder)
-      ReportUtilCommand.* generates utilization report (placeholder)
+      ScreenLsCommand.*   lists processes and CPU utilization
+      ReportUtilCommand.* generates utilization report
   model/
-    Model.*               holds application state
+    Model.*               configuration, process registry, background runtime
     Process.*             process state, instruction execution, randomized programs
   view/
     View.*                all console output

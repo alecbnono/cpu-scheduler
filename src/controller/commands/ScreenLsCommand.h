@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "model/Model.hpp"
+#include "view/View.hpp"
 
 #include "model/SystemSnapshot.hpp"
 

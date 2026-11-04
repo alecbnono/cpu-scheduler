@@ -15,12 +15,14 @@ public:
 
     // Returns false when the app should exit.
     bool handleCommand(const std::string& line);
+    std::string prompt() const;
 
 private:
     Model& model_;
     View& view_;
     ScreenLsCommand screenLsCommand_;
     ReportUtilCommand reportUtilCommand_;
+    std::string attached_;
 
     // Splits a line into whitespace-separated tokens.
     static std::vector<std::string> tokenize(const std::string& line);

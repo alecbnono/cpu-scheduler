@@ -2,12 +2,18 @@
 #include "model/Process.hpp"
 
 #include <sstream>
+#include "controller/commands/ScreenLsCommand.hpp"
+#include "controller/commands/ReportUtilCommand.hpp"
 
 Controller::Controller(Model& model, View& view)
     : model_(model),
       view_(view),
       screenLsCommand_(model_),
       reportUtilCommand_(model_) {}
+
+std::string Controller::prompt() const {
+    return attached_.empty() ? "main> " : attached_ + "> ";
+}
 
 std::vector<std::string> Controller::tokenize(const std::string& line) {
     std::vector<std::string> tokens;
@@ -28,12 +34,34 @@ bool Controller::handleCommand(const std::string& line) {
 
     const std::string& command = tokens[0];
 
+    if (!attached_.empty()) {
+        if (command == "exit" && tokens.size() == 1) {
+            attached_.clear();
+            view_.clearScreen();
+            view_.showMessage("Main menu. Type help for commands.");
+        } else if (command == "process-smi" && tokens.size() == 1) {
+            view_.showMessage(model_.processInfo(attached_));
+        } else {
+            view_.showMessage("Process screen commands: process-smi, exit (return to main menu).");
+        }
+        return true;
+    }
+
     if (command == "exit") {
+        if (tokens.size() != 1) { view_.showMessage("Usage: exit"); return true; }
         return false;
     }
 
     if (command == "initialize") {
-        view_.showMessage("initialize: not implemented yet.");
+        if (tokens.size() != 1) { view_.showMessage("Usage: initialize"); return true; }
+        std::string message;
+        model_.initialize("config.txt", message);
+        view_.showMessage(message);
+        return true;
+    }
+
+    if (!model_.initialized()) {
+        view_.showMessage("Run initialize first. Only initialize and exit are available.");
         return true;
     }
 
@@ -42,25 +70,44 @@ bool Controller::handleCommand(const std::string& line) {
     }
 
     if (command == "screen") {
-        view_.showMessage("screen: not implemented yet.");
+        if (tokens.size() == 2 && tokens[1] == "-ls") {
+            ScreenLsCommand(model_, view_).execute(tokens);
+        } else if (tokens.size() == 3 && (tokens[1] == "-s" || tokens[1] == "-r")) {
+            const auto& name = tokens[2];
+            if (tokens[1] == "-s") {
+                std::string message;
+                if (!model_.createProcess(name, message)) { view_.showMessage(message); return true; }
+            } else if (!model_.canAttach(name)) {
+                view_.showMessage("Process " + name + " not found.");
+                return true;
+            }
+            attached_ = name;
+            view_.clearScreen();
+            view_.showMessage(model_.processInfo(name));
+            view_.showMessage("Type process-smi for updated details and logs; exit to return to the main menu.");
+        } else {
+            view_.showMessage("Usage: screen -s <process name> | screen -r <process name> | screen -ls");
+        }
         return true;
     }
 
     if (command == "scheduler-start") {
-        view_.showMessage("scheduler-start: not implemented yet.");
+        view_.showMessage(tokens.size() == 1 ? model_.setGenerating(true) : "Usage: scheduler-start");
         return true;
     }
 
     if (command == "scheduler-stop") {
-        view_.showMessage("scheduler-stop: not implemented yet.");
+        view_.showMessage(tokens.size() == 1 ? model_.setGenerating(false) : "Usage: scheduler-stop");
         return true;
     }
 
     if (command == "report-util") {
+        if (tokens.size() != 1) { view_.showMessage("Usage: report-util"); return true; }
         return reportUtilCommand_.execute(tokens);
     }
 
     if (command == "help") {
+        if (tokens.size() != 1) { view_.showMessage("Usage: help"); return true; }
         view_.showHelp();
         return true;
     }
