@@ -13,6 +13,7 @@ struct ProcessSnapshot {
     int coreId = -1;               // Assigned core (e.g., 0, 1), or -1 if not on a core
     std::uint64_t currentInstruction = 0;
     std::uint64_t totalInstructions = 0;
+    std::string status = "Ready";
 
     ProcessSnapshot() = default;
     ProcessSnapshot(std::string processName,

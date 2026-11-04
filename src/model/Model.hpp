@@ -33,6 +33,7 @@ public:
 
   
 private:
+    friend struct ModelTestAccess;
     struct Entry {
         std::unique_ptr<Process> process;
         std::uint64_t total;
@@ -40,6 +41,7 @@ private:
         bool queued = false;
         std::uint64_t delay = 0;
         std::string timestamp;
+        std::vector<std::string> formattedLogs;
     };
     struct Core { Entry* entry = nullptr; std::uint64_t slice = 0; };
     void run();

@@ -54,7 +54,10 @@ int main() {
             require(command("screen -r absent").second.find("not found") != std::string::npos, "Missing process");
             command("screen -s demo");
             require(controller.prompt() == "demo> ", "Attach on creation");
-            require(command("process-smi").second.find("ID: 1") != std::string::npos, "Process details");
+            const auto details = command("process-smi").second;
+            require(details.find("Process name: demo\nID: 1\nLogs:\n") == 0 &&
+                    details.find("Current instruction line: ") != std::string::npos &&
+                    details.find("Lines of code: ") != std::string::npos, "PDF process details");
             require(command("scheduler-start").second.find("Process screen commands") != std::string::npos, "Screen command isolation");
             require(command("exit").first && controller.prompt() == "main> ", "Detach does not terminate");
             require(command("screen -s demo").second.find("already exists") != std::string::npos, "Duplicate names");

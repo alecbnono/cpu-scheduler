@@ -15,7 +15,7 @@ class ReportUtilCommand {
 public:
     explicit ReportUtilCommand(const ISnapshotProvider& provider,
                                std::string targetFilePath = "csopesy-log.txt",
-                               std::string displayPath = "C:/csopesy-log.txt",
+                               std::string displayPath = "",
                                std::ostream& feedbackOut = std::cout);
     ReportUtilCommand(const ISnapshotProvider& provider, View& view);
 
