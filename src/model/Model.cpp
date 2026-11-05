@@ -215,7 +215,7 @@ std::string Model::setGenerating(bool enabled) {
 void Model::run() {
     std::unique_lock<std::mutex> lock(mutex_);
     while (!stopping_) {
-        if (changed_.wait_for(lock, std::chrono::milliseconds(10), [this] { return stopping_; })) break;
+        if (changed_.wait_for(lock, std::chrono::milliseconds(1), [this] { return stopping_; })) break;
         advance();
     }
 }
